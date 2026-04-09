@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Runner - Simple Checker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge-info {
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            margin-left: 15px;
+        }
+
+        .live-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #4CAF50;
+            border-radius: 50%;
+            margin-left: 10px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-card.green {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+            color: #333;
+        }
+
+        .stat-card.red {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stat-card.blue {
+            background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+            color: #333;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .progress-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e2e8f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: flex;
+        }
+
+        .progress-segment {
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.9em;
+            font-weight: bold;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Sembunyikan segmen dengan width 0% */
+        .progress-segment[style*="width: 0%"] {
+            display: none;
+        }
+
+        /* Atur border radius untuk segmen pertama dan terakhir */
+        .progress-segment:first-child {
+            border-radius: 15px 0 0 15px;
+        }
+
+        .progress-segment:last-child {
+            border-radius: 0 15px 15px 0;
+        }
+
+        .progress-segment:only-child {
+            border-radius: 15px;
+        }
+
+        .segment-success { background: #48bb78; }
+        .segment-failed { background: #f56565; }
+
+        .url-categories {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .category-card.active {
+            border-color: #667eea;
+            transform: scale(1.02);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .category-card.success { 
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+        
+        .category-card.failed { 
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .category-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .category-count {
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #48bb78; color: white; }
+        .btn-warning { background: #ecc94b; color: #333; }
+        .btn-danger { background: #f56565; color: white; }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .main-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .url-list-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .url-list-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .url-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .url-item:hover {
+            background: #f7fafc;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 15px;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .badge-success { background: #48bb78; color: white; }
+        .badge-failed { background: #f56565; color: white; }
+
+        .url-text {
+            flex: 1;
+            color: #4a5568;
+            word-break: break-all;
+            font-size: 0.9em;
+            font-family: monospace;
+        }
+
+        .timestamp {
+            color: #a0aec0;
+            font-size: 0.8em;
+            margin-left: 15px;
+            white-space: nowrap;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: white;
+            opacity: 0.8;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.95em;
+        }
+
+        .copy-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 1em;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .method-indicator {
+            font-size: 0.8em;
+            color: #718096;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                🔍 URL Runner - Simple Checker
+                <span class="badge-info">Direct → Proxy → Failed</span>
+                <span class="live-indicator"></span>
+            </h1>
+
+            <div class="stats-grid">
+                <div class="stat-card green">
+                    <div class="stat-label">✅ SUCCESS</div>
+                    <div class="stat-number" id="totalSuccess">0</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-label">❌ FAILED</div>
+                    <div class="stat-number" id="failedCount">0</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-label">⏳ PENDING</div>
+                    <div class="stat-number" id="pendingCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">📊 SUCCESS RATE</div>
+                    <div class="stat-number" id="successRate">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Section yang diperbaiki -->
+        <div class="progress-section">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                <div>
+                    <span style="font-weight: bold; font-size: 1.1em;">📊 Success vs Failed Ratio</span>
+                </div>
+                <div style="display: flex; gap: 20px;">
+                    <span style="color: #48bb78;">
+                        <strong>✅ Success:</strong> <span id="successPercent">0%</span>
+                    </span>
+                    <span style="color: #f56565;">
+                        <strong>❌ Failed:</strong> <span id="failedPercent">0%</span>
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Progress Bar dengan tooltip -->
+            <div class="progress-bar" style="margin-bottom: 10px;" title="Success vs Failed distribution">
+                <div class="progress-segment segment-success" id="successProgress" style="width: 0%">
+                    <span id="successProgressText">0%</span>
+                </div>
+                <div class="progress-segment segment-failed" id="failedProgress" style="width: 0%">
+                    <span id="failedProgressText">0%</span>
+                </div>
+            </div>
+            
+            <!-- Detail angka -->
+            <div style="display: flex; justify-content: space-between; align-items: center; background: #f7fafc; padding: 12px; border-radius: 8px; margin-top: 10px;">
+                <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+                    <div>
+                        <span style="color: #4a5568; font-size: 0.9em;">✅ Success</span>
+                        <div style="font-weight: bold; font-size: 1.2em; color: #48bb78;">
+                            <span id="totalSuccessDetail">0</span> URLs
+                        </div>
+                        <div style="font-size: 0.85em; color: #718096; margin-top: 3px;">
+                            📱 <span id="directCountDetail">0</span> Direct · 🔄 <span id="proxyCountDetail">0</span> Proxy
+                        </div>
+                    </div>
+                    <div>
+                        <span style="color: #4a5568; font-size: 0.9em;">❌ Failed</span>
+                        <div style="font-weight: bold; font-size: 1.2em; color: #f56565;">
+                            <span id="failedCountDetail">0</span> URLs
+                        </div>
+                    </div>
+                    <div>
+                        <span style="color: #4a5568; font-size: 0.9em;">⏳ Pending</span>
+                        <div style="font-weight: bold; font-size: 1.2em; color: #4299e1;">
+                            <span id="pendingCountDetail">0</span> URLs
+                        </div>
+                    </div>
+                    <div>
+                        <span style="color: #4a5568; font-size: 0.9em;">📈 Total Processed</span>
+                        <div style="font-weight: bold; font-size: 1.2em; color: #667eea;">
+                            <span id="totalProcessedDetail">0</span> URLs
+                        </div>
+                    </div>
+                </div>
+                <div style="background: #ebf4ff; padding: 8px 15px; border-radius: 20px;">
+                    <span style="color: #667eea; font-weight: bold;">⭐ Success Rate: <span id="successRateDetail">0%</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="url-categories">
+            <div class="category-card success active" onclick="switchCategory('success')">
+                <div class="category-title">
+                    <span>✅ SUCCESS</span>
+                    <span class="copy-btn" onclick="copyCategory('success'); event.stopPropagation();">📋 Copy</span>
+                </div>
+                <div class="category-count" id="cardSuccessCount">0</div>
+                <div style="font-size: 0.9em; opacity: 0.8; margin-top: 5px;">
+                    📱 <span id="directCount">0</span> Direct · 🔄 <span id="proxyCount">0</span> Proxy
+                </div>
+            </div>
+            <div class="category-card failed" onclick="switchCategory('failed')">
+                <div class="category-title">
+                    <span>❌ FAILED</span>
+                    <span class="copy-btn" onclick="copyCategory('failed'); event.stopPropagation();">📋 Copy</span>
+                </div>
+                <div class="category-count" id="cardFailedCount">0</div>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="refreshData()">🔄 Refresh</button>
+            <button class="btn btn-success" onclick="exportAll()">📥 Export All</button>
+            <button class="btn btn-warning" onclick="toggleAutoRefresh()">⏱️ Auto: ON</button>
+            <button class="btn btn-danger" onclick="resetDatabase()">⚠️ Reset</button>
+        </div>
+
+        <div class="main-panel">
+            <!-- URL List Panel -->
+            <div class="url-list-container">
+                <div class="url-list-title">
+                    <span id="currentCategoryTitle">✅ Success URLs</span>
+                    <span id="categoryCount">0 URLs</span>
+                </div>
+                
+                <input type="text" class="search-box" id="searchInput" placeholder="Search URLs..." onkeyup="searchUrls()">
+                
+                <div id="urlList">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <!-- History Panel -->
+            <div class="url-list-container">
+                <div class="url-list-title">
+                    <span>📜 Processing History</span>
+                    <span id="historyCount">0 items</span>
+                </div>
+                
+                <div id="historyList">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Last update: <span id="lastUpdate">-</span> | Uptime: <span id="uptime">-</span> | Total Processed: <span id="totalProcessed">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let currentCategory = 'success';
+        let autoRefresh = true;
+        let refreshInterval = 3000;
+        let stats = {};
+        let urlCache = {};
+
+        // Load data from server
+        async function fetchStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const data = await response.json();
+                stats = data;
+                updateStats(data);
+            } catch (error) {
+                console.error('Failed to fetch stats:', error);
+            }
+        }
+
+        async function fetchUrls(category) {
+            try {
+                let endpoint = category;
+                if (category === 'success') {
+                    endpoint = 'success';
+                }
+                
+                const response = await fetch(`/api/urls/${endpoint}`);
+                const data = await response.json();
+                urlCache[category] = data.urls || [];
+                displayUrls(category, data.urls || [], data.details || {});
+                
+                document.getElementById('categoryCount').textContent = 
+                    `${data.urls?.length || 0} URLs`;
+            } catch (error) {
+                console.error(`Failed to fetch ${category} URLs:`, error);
+            }
+        }
+
+        async function fetchHistory() {
+            try {
+                const response = await fetch('/api/history?limit=50');
+                const history = await response.json();
+                displayHistory(history);
+                document.getElementById('historyCount').textContent = 
+                    `${history.length} items`;
+            } catch (error) {
+                console.error('Failed to fetch history:', error);
+            }
+        }
+
+        async function fetchConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                document.getElementById('uptime').textContent = 
+                    formatUptime(config.uptime);
+            } catch (error) {
+                console.error('Failed to fetch config:', error);
+            }
+        }
+
+        // Update statistics display
+        function updateStats(data) {
+            const counts = data.counts || {};
+            const statsData = data.stats || {};
+            
+            const totalSuccess = counts.success || 0;
+            const failed = counts.failed || 0;
+            const pending = counts.pending || 0;
+            const direct = counts.direct || 0;
+            const proxy = counts.proxy || 0;
+            const totalProcessed = statsData.totalProcessed || 0;
+            
+            // Update statistik utama
+            document.getElementById('totalSuccess').textContent = totalSuccess;
+            document.getElementById('failedCount').textContent = failed;
+            document.getElementById('pendingCount').textContent = pending;
+            
+            // Update detail di progress section
+            document.getElementById('totalSuccessDetail').textContent = totalSuccess;
+            document.getElementById('failedCountDetail').textContent = failed;
+            document.getElementById('pendingCountDetail').textContent = pending;
+            document.getElementById('totalProcessedDetail').textContent = totalProcessed;
+            
+            document.getElementById('directCountDetail').textContent = direct;
+            document.getElementById('proxyCountDetail').textContent = proxy;
+            
+            // Update card counts
+            document.getElementById('cardSuccessCount').textContent = totalSuccess;
+            document.getElementById('cardFailedCount').textContent = failed;
+            
+            document.getElementById('directCount').textContent = direct;
+            document.getElementById('proxyCount').textContent = proxy;
+            
+            // Hitung persentase
+            const total = totalSuccess + failed;
+            let successPercent = 0;
+            let failedPercent = 0;
+            
+            if (total > 0) {
+                successPercent = (totalSuccess / total * 100);
+                failedPercent = (failed / total * 100);
+            }
+            
+            // Update persentase
+            const successPercentFixed = successPercent.toFixed(1);
+            const failedPercentFixed = failedPercent.toFixed(1);
+            
+            document.getElementById('successPercent').textContent = successPercentFixed + '%';
+            document.getElementById('failedPercent').textContent = failedPercentFixed + '%';
+            
+            // Update progress bar
+            const successProgress = document.getElementById('successProgress');
+            const failedProgress = document.getElementById('failedProgress');
+            const successText = document.getElementById('successProgressText');
+            const failedText = document.getElementById('failedProgressText');
+            
+            // Success segment
+            if (successPercent > 0) {
+                successProgress.style.width = successPercent + '%';
+                successText.textContent = successPercentFixed + '%';
+            } else {
+                successProgress.style.width = '0%';
+            }
+            
+            // Failed segment
+            if (failedPercent > 0) {
+                failedProgress.style.width = failedPercent + '%';
+                failedText.textContent = failedPercentFixed + '%';
+            } else {
+                failedProgress.style.width = '0%';
+            }
+            
+            // Update success rate
+            const totalAttempts = totalSuccess + failed;
+            const successRate = totalAttempts > 0 ? ((totalSuccess / totalAttempts) * 100).toFixed(1) : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+            document.getElementById('successRateDetail').textContent = successRate + '%';
+            
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+        }
+
+        // Display URLs
+        function displayUrls(category, urls, details) {
+            const container = document.getElementById('urlList');
+            
+            if (!urls || urls.length === 0) {
+                container.innerHTML = '<div class="loading">📭 No URLs in this category</div>';
+                return;
+            }
+
+            let html = '';
+            urls.slice(0, 100).forEach(url => {
+                let badgeClass = category === 'success' ? 'badge-success' : 'badge-failed';
+                let badgeText = category === 'success' ? '✅ SUCCESS' : '❌ FAILED';
+                
+                // Untuk success URLs, tambahkan info method (direct/proxy)
+                let methodInfo = '';
+                if (category === 'success' && details && details[url]) {
+                    const method = details[url].method;
+                    methodInfo = method === 'direct' ? '📱' : '🔄';
+                }
+
+                html += `
+                    <div class="url-item">
+                        <span class="status-badge ${badgeClass}">${badgeText}</span>
+                        <span class="url-text">${methodInfo} ${escapeHtml(url)}</span>
+                    </div>
+                `;
+            });
+
+            if (urls.length > 100) {
+                html += `<div class="url-item">... and ${urls.length - 100} more</div>`;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Display history
+        function displayHistory(history) {
+            const container = document.getElementById('historyList');
+            
+            if (!history || history.length === 0) {
+                container.innerHTML = '<div class="loading">📭 No history</div>';
+                return;
+            }
+
+            let html = '';
+            history.forEach(item => {
+                const status = item.status === 'success' ? '✅ SUCCESS' : '❌ FAILED';
+                const badgeClass = item.status === 'success' ? 'badge-success' : 'badge-failed';
+                const methodIcon = item.method === 'direct' ? '📱' : (item.method === 'proxy' ? '🔄' : '');
+
+                html += `
+                    <div class="url-item">
+                        <span class="status-badge ${badgeClass}">${status}</span>
+                        <span class="url-text">${methodIcon} ${escapeHtml(item.url)}</span>
+                        <span class="timestamp">${formatTime(item.timestamp)}</span>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Switch category
+        function switchCategory(category) {
+            currentCategory = category;
+            
+            document.querySelectorAll('.category-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            const titles = {
+                'success': '✅ Success URLs',
+                'failed': '❌ Failed URLs'
+            };
+            document.getElementById('currentCategoryTitle').textContent = titles[category];
+            
+            fetchUrls(category);
+        }
+
+        // Search URLs
+        function searchUrls() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const urls = urlCache[currentCategory] || [];
+            
+            if (!searchTerm) {
+                fetchUrls(currentCategory);
+                return;
+            }
+            
+            const filtered = urls.filter(url => 
+                url.toLowerCase().includes(searchTerm)
+            );
+            
+            displayUrls(currentCategory, filtered, {});
+            document.getElementById('categoryCount').textContent = 
+                `${filtered.length} URLs (filtered)`;
+        }
+
+        // Copy category URLs
+        async function copyCategory(category) {
+            try {
+                const response = await fetch(`/api/urls/${category}?format=txt`);
+                const text = await response.text();
+                await navigator.clipboard.writeText(text);
+                alert(`📋 ${category} URLs copied to clipboard!`);
+            } catch (error) {
+                console.error('Failed to copy:', error);
+                alert('Failed to copy URLs');
+            }
+        }
+
+        // Export all data
+        async function exportAll() {
+            try {
+                const response = await fetch('/api/export/txt');
+                const text = await response.text();
+                
+                const blob = new Blob([text], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `url-export-${new Date().toISOString()}.txt`;
+                a.click();
+            } catch (error) {
+                console.error('Failed to export:', error);
+                alert('Failed to export data');
+            }
+        }
+
+        // Reset database
+        async function resetDatabase() {
+            if (confirm('⚠️ Are you sure you want to reset the entire database?')) {
+                try {
+                    const response = await fetch('/api/reset', { method: 'POST' });
+                    const result = await response.json();
+                    alert('Database reset successfully!');
+                    refreshData();
+                } catch (error) {
+                    console.error('Failed to reset database:', error);
+                    alert('Failed to reset database');
+                }
+            }
+        }
+
+        // Toggle auto refresh
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            const btn = event.target;
+            btn.textContent = autoRefresh ? '⏱️ Auto: ON' : '⏱️ Auto: OFF';
+        }
+
+        // Refresh all data
+        function refreshData() {
+            fetchStats();
+            fetchUrls(currentCategory);
+            fetchHistory();
+            fetchConfig();
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString();
+        }
+
+        function formatUptime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${hours}h ${minutes}m ${secs}s`;
+        }
+
+        // Initialize
+        function init() {
+            refreshData();
+            
+            setInterval(() => {
+                if (autoRefresh) {
+                    refreshData();
+                }
+            }, refreshInterval);
+        }
+
+        init();
+    </script>
+</body>
+</html>

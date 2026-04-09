@@ -1,4 +1,6 @@
 # lockdown-etc
+Custom Build Command : npm install
+Custom Start Command : node server.js
 
 # "WAJIB SET ENV"
 
